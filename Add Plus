@@ -1,0 +1,96 @@
+// Enhanced Auto-Claim Script for AddPlus.org with proper delays
+(async function() {
+  // Function to find and click claim buttons
+  function clickClaimButton() {
+    // Try multiple possible selectors for the claim button
+    const selectors = [
+      'button[data-slot="button"]', // Exact selector from your HTML
+      'button:contains("Claim")',
+      'button >> text=Claim'
+    ];
+    
+    for (const selector of selectors) {
+      try {
+        const buttons = document.querySelectorAll(selector);
+        for (const btn of buttons) {
+          if (btn.textContent.match(/Claim/i) && btn.offsetParent !== null) {
+            btn.click();
+            console.log('Clicked claim button using selector:', selector);
+            return true;
+          }
+        }
+      } catch (e) {
+        console.log('Error trying selector:', selector, e);
+      }
+    }
+    return false;
+  }
+
+  // Function to process a single page
+  async function processPage(url) {
+    console.log('Processing:', url);
+    const newWindow = window.open(url, '_blank');
+    
+    if (!newWindow) {
+      console.error('Popup blocked! Please allow popups for this site.');
+      return false;
+    }
+
+    // Wait for initial page load
+    await new Promise(resolve => setTimeout(resolve, 4000));
+    
+    try {
+      // Inject our click function into the new window
+      newWindow.eval(clickClaimButton.toString());
+      
+      // Wait a bit more before clicking (additional safety delay)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Try to click the claim button
+      const success = newWindow.eval('clickClaimButton()');
+      
+      if (success) {
+        console.log('Successfully claimed on', url);
+      } else {
+        console.log('Claim button not found on first try for', url);
+        // Scroll and try again
+        newWindow.scrollTo(0, newWindow.document.body.scrollHeight);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        newWindow.eval('clickClaimButton()');
+      }
+      
+      // Close the window after delay
+      setTimeout(() => {
+        try {
+          newWindow.close();
+        } catch (e) {
+          console.error('Error closing window:', e);
+        }
+      }, 3000);
+      
+      return success;
+    } catch (e) {
+      console.error('Error processing', url, ':', e);
+      return false;
+    }
+  }
+
+  // List of URLs to process
+  const urls = [
+  'https://addplus.org/boost/Reallymajor1',
+  'https://addplus.org/boost/Ramzan279838',
+  'https://addplus.org/boost/onefootbal18741',
+  'https://addplus.org/boost/Rie_y4n',
+  'https://addplus.org/boost/zakisboy',
+  'https://addplus.org/boost/FiersaBesari'
+]
+;
+
+  // Process all URLs with delay between each
+  for (const url of urls) {
+    await processPage(url);
+    await new Promise(resolve => setTimeout(resolve, 4000)); // 4s delay between URLs
+  }
+
+  console.log('Finished processing all URLs');
+})();
